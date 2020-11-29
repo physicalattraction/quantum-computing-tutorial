@@ -67,6 +67,7 @@ ptyprocess==0.6.0
 pybind11==2.6.1
 pycparser==2.20
 Pygments==2.7.2
+pylatexenc==2.8
 pyparsing==2.4.7
 pyrsistent==0.17.3
 python-constraint==1.4.0

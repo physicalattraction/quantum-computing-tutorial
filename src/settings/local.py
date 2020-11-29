@@ -1,9 +1,10 @@
 import json
 from typing import Any
-
+import os.path
 
 def get_secret(key: str) -> Any:
-    secrets_file = 'secrets.json'
+    settings_dir = os.path.dirname(__file__)
+    secrets_file = os.path.join(settings_dir, 'secrets.json')
     with open(secrets_file, 'r') as f:
         secrets = json.load(f)
     return secrets[key]
