@@ -1,0 +1,1 @@
+You need to install the requirements in `local.txt`. In order to get the exact same packages all the time, install `detailed_local.txt` instead. 
