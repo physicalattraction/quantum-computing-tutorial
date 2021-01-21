@@ -3,7 +3,6 @@ https://qiskit.org/textbook/ch-gates/multiple-qubits-entangled-states.html
 """
 
 from math import sqrt
-from pprint import pprint
 
 from qiskit import *
 from qiskit.visualization import plot_histogram
@@ -34,6 +33,7 @@ def single_qubit_gates_on_multi_qubit_vectors():
     for row in unitary:
         print(row * sqrt(2))
 
+
 def first_cnot():
     qc = QuantumCircuit(2)
 
@@ -53,6 +53,7 @@ def first_cnot():
     unitary = execute(qc, backend).result().get_unitary()
     for row in unitary:
         print([round(abs(elem * sqrt(2))) for elem in row])
+
 
 if __name__ == '__main__':
     # draw_quantum_circuit()
