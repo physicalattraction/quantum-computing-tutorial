@@ -2,7 +2,6 @@
 https://qiskit.org/textbook/ch-states/single-qubit-gates.html
 """
 
-from pprint import pprint
 from typing import List
 
 from math import pi, sqrt
@@ -11,6 +10,8 @@ from qiskit.visualization import plot_bloch_multivector, plot_histogram
 
 # These are the states along the Z, X and Y axis
 # The direction is a human-readable indication where on the Block sphere they lie
+from utils import draw_quantum_circuit
+
 a = 1 / sqrt(2)  # Normalization factor
 state_z0 = [1, 0]  # |0> = [1, 0] = up
 state_z1 = [0, 1]  # |1> = [0, 1] = down
@@ -41,7 +42,8 @@ def show_all_initial_states():
     Draw the Bloch spheres for all 6 initial states
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         show_qc(qc)
@@ -52,7 +54,8 @@ def x_gate():
     Execute an X-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         show_qc(qc)
@@ -65,7 +68,8 @@ def y_gate():
     Execute a Y-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         qc.y(0)
@@ -77,7 +81,8 @@ def z_gate():
     Execute a Z-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         qc.z(0)
@@ -107,7 +112,8 @@ def h_gate():
     |↻> -> |↺>
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         qc.h(0)
@@ -119,14 +125,15 @@ def hxh_gate():
     I have calculated that HZH = I. This checks whether that is correct
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
         qc.h(0)
         qc.x(0)
         qc.h(0)
-        final_state = show_qc(qc)
-        print(f'{initial_state} -> {final_state}')
+        draw_quantum_circuit(qc, draw_circuit=False, draw_bloch_sphere=False,
+                             draw_unitary=False)
 
 
 def z_measurement(initial_state=None):
@@ -158,7 +165,8 @@ def z_measurement(initial_state=None):
 
 
 def x_measurement():
-    def perform_x_measurement(qc: QuantumCircuit, qubit: int, cbit: int) -> QuantumCircuit:
+    def perform_x_measurement(qc: QuantumCircuit, qubit: int,
+                              cbit: int) -> QuantumCircuit:
         """
         Measure 'qubit' in the X-basis, and store the result in 'cbit'
         """
@@ -182,7 +190,8 @@ def rz_gate():
     Execute a Rz-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
+    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
+                          state_y1]:
         for angle in [pi / 4, pi / 2]:
             qc = QuantumCircuit(1, 1)
             qc.initialize(initial_state, 0)
@@ -244,8 +253,8 @@ if __name__ == '__main__':
     # y_gate()
     # z_gate()
     # h_gate()
-    # hxh_gate()
+    hxh_gate()
     # x_measurement()
     # rz_gate()
     # s_gate()
-    t_gate()
+    # t_gate()

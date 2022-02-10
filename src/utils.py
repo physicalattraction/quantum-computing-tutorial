@@ -3,6 +3,7 @@ https://qiskit.org/textbook/ch-gates/phase-kickback.html
 """
 
 from enum import Enum
+from fractions import Fraction
 from typing import List
 
 from math import pi, sqrt
@@ -54,22 +55,118 @@ def bit_to(qc: QuantumCircuit, bit: int, state: State):
         qc.rx(-pi / 2, bit)
 
 
-def round_complex(c: complex) -> str:
+def display_float(number: float) -> str:
+    """
+    Helper function to display floats as square roots whenever possible
+
+    Note: all outputs are right justified to 5 characters
+
+    >>> display_float(0)
+    '     0'
+    >>> display_float(1)
+    '     1'
+    >>> display_float(2)
+    '     2'
+    >>> display_float(3)
+    '     3'
+    >>> display_float(-3)
+    '    -3'
+    >>> display_float(1/2)
+    '   1/2'
+    >>> display_float(1/3)
+    '   1/3'
+    >>> display_float(2/3)
+    '   2/3'
+    >>> display_float(-2/3)
+    '  -2/3'
+    >>> display_float(sqrt(2))
+    '    √2'
+    >>> display_float(1/sqrt(2))
+    '  1/√2'
+    >>> display_float(sqrt(4/3))
+    '  2/√3'
+    >>> display_float(-sqrt(4/3))
+    ' -2/√3'
+    >>> display_float(0.866)
+    '  0.87'
+    >>> display_float(-0.866)
+    ' -0.87'
+    """
+
+    number_is_negative = number < 0
+    number = abs(number)
+
+    threshold = 1E-5
+
+    def _float_as_integer(_number: float) -> int:
+        possible_result = int(round(_number))
+        if abs(_number - possible_result) < threshold:
+            return possible_result
+
+    def _float_as_fraction(_number: float) -> Fraction:
+        possible_result = Fraction(_number).limit_denominator(64)
+        if abs(_number - possible_result) / _number < threshold:
+            return possible_result
+
+    def _float_as_sqrt(_number: float) -> str:
+        if root := _float_as_integer(_number * _number):
+            return f'√{root}'
+        if fraction := _float_as_fraction(_number * _number):
+            numerator = fraction.numerator
+            denominator = fraction.denominator
+            if simplified_numerator := _float_as_integer(sqrt(numerator)):
+                numerator = simplified_numerator
+            else:
+                numerator = f'√{numerator}'
+            if simplified_denominator := _float_as_integer(sqrt(denominator)):
+                denominator = simplified_denominator
+            else:
+                denominator = f'√{denominator}'
+            return f'{numerator}/{denominator}'
+
+    def _float_as_rounded_float(_number: float) -> str:
+        return f'{_number:.2f}'
+
+    for f in [_float_as_integer, _float_as_fraction,
+              _float_as_sqrt, _float_as_rounded_float]:
+        result = f(number)
+        if result is not None:
+            break
+
+    result = str(result)
+    if number_is_negative:
+        result = '-' + result
+    return result.rjust(6)
+
+
+def display_complex(c: complex) -> str:
     """
     Helper function to round a complex number
 
-    - Rounds both real and imaginary components to two decimals
+    - Displays real and imaginary components as fractions or sqrts when possible
+    - Rounds these components to two decimals otherwise
     - Removes real and imaginary parts when they're 0
+
+    >>> display_complex(0)
+    '     0'
+    >>> display_complex(1/2)
+    '   1/2'
+    >>> display_complex(1j/2)
+    '   1/2j'
+    >>> display_complex(1/2+1j/2)
+    '   1/2 +    1/2j'
+    >>> display_complex(-sqrt(2)-sqrt(4/3)*1j)
+    '   -√2 +  -2/√3j'
     """
 
-    if abs(c.real) > 1E-3 and abs(c.imag) > 1E-3:
-        return f'{c.real:^5.2f} + {c.imag:>5.2f} i'
-    elif abs(c.real) > 1E-3:
-        return f'{c.real:>5.2f}'
-    elif abs(c.imag) > 1E-3:
-        return f'{c.imag:>5.2f} j'
+    threshold = 1E-5
+
+    if abs(c.real) > threshold and abs(c.imag) > threshold:
+        return f'{display_float(c.real)} + {display_float(c.imag)}j'
+    elif abs(c.imag) > threshold:
+        return display_float(c.imag) + 'j'
     else:
-        return f'{0:>5}'
+        return display_float(c.real)
 
 
 def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
@@ -87,7 +184,7 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
             unitary = execute(qc, backend).result().get_unitary()
             print('Unitary:')
             for row in unitary:
-                print('  '.join([round_complex(elem) for elem in row]))
+                print('  '.join([display_complex(elem) for elem in row]))
         except QiskitError:
             # If a qunatum circuit contains a measure operation, the process is
             # not reversible anymore, and hence cannot be represented by a
@@ -103,7 +200,7 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
         if draw_final_state:
             print('Final state:')
             for elem in final_state:
-                print(round_complex(elem))
+                print(display_complex(elem))
         if draw_bloch_sphere:
             plot_bloch_multivector(final_state).show()
 
