@@ -4,3 +4,4 @@ numpy
 pylatexenc
 qiskit
 qiskit-ibmq-provider
+git+https://github.com/qiskit-community/qiskit-textbook.git#subdirectory=qiskit-textbook-src

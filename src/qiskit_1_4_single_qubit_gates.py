@@ -55,6 +55,7 @@ def x_gate():
     for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0, state_y1]:
         qc = QuantumCircuit(1, 1)
         qc.initialize(initial_state, 0)
+        show_qc(qc)
         qc.x(0)
         show_qc(qc)
 
@@ -221,24 +222,23 @@ def t_gate():
     qc.initialize(state_x0, 0)
     show_qc(qc)
 
-    # Rz(pi/2)
+    # Rz(pi/4)
     qc.initialize(state_x0, 0)
     qc.rz(pi / 4, 0)
     show_qc(qc)
 
-    # S
+    # T
     qc.initialize(state_x0, 0)
     qc.t(0)
     show_qc(qc)
 
-    # S dagger
+    # T dagger
     qc.initialize(state_x0, 0)
     qc.tdg(0)
     show_qc(qc)
 
 
 if __name__ == '__main__':
-    pprint(qiskit.__qiskit_version__)
     # show_all_initial_states()
     # x_gate()
     # y_gate()
