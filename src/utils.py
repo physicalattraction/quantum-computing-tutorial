@@ -8,7 +8,7 @@ from typing import List
 
 from math import pi, sqrt
 from qiskit import Aer, QiskitError, QuantumCircuit, execute
-from qiskit.visualization import plot_bloch_multivector, plot_histogram
+from qiskit.visualization import plot_bloch_multivector, plot_histogram, plot_state_qsphere
 
 
 class State(Enum):
@@ -93,10 +93,9 @@ def display_float(number: float) -> str:
     ' -0.87'
     """
 
-    number_is_negative = number < 0
-    number = abs(number)
-
     threshold = 1E-5
+    number_is_negative = number < -threshold
+    number = abs(number)
 
     def _float_as_integer(_number: float) -> int:
         possible_result = int(round(_number))
@@ -133,6 +132,8 @@ def display_float(number: float) -> str:
         if result is not None:
             break
 
+    if number == 0:
+        number_is_negative = False
     result = str(result)
     if number_is_negative:
         result = '-' + result
@@ -171,7 +172,8 @@ def display_complex(c: complex) -> str:
 
 def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
                          draw_unitary=True, draw_final_state=True,
-                         draw_bloch_sphere=True, draw_histogram=False):
+                         draw_bloch_sphere=False, draw_q_sphere=False,
+                         draw_histogram=False):
     if draw_circuit:
         # Visualize the quantum circuit
         print('Quantum circuit:')
@@ -191,7 +193,7 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
             # Unitary matrix. We just ignore this operation in that case.
             pass
 
-    if draw_final_state or draw_bloch_sphere:
+    if draw_final_state or draw_bloch_sphere or draw_q_sphere:
         # Visualize the final state
         # final_state for 2 qubits = a |00> + b |01> + c |10> + d |11>
         backend = Aer.get_backend('statevector_simulator')
@@ -203,6 +205,8 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
                 print(display_complex(elem))
         if draw_bloch_sphere:
             plot_bloch_multivector(final_state).show()
+        if draw_q_sphere:
+            plot_state_qsphere(final_state).show()
 
     if draw_histogram:
         backend = Aer.get_backend('statevector_simulator')
