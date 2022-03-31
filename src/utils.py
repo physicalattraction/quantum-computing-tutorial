@@ -1,13 +1,15 @@
 """
 https://qiskit.org/textbook/ch-gates/phase-kickback.html
 """
-
 from enum import Enum
 from fractions import Fraction
-from typing import List
+from typing import List, Optional, Sequence
 
+import itertools
+import math
 from math import pi, sqrt
 from qiskit import Aer, QiskitError, QuantumCircuit, execute
+from qiskit.providers.aer.backends.compatibility import Operator, Statevector
 from qiskit.visualization import plot_bloch_multivector, plot_histogram, plot_state_qsphere
 
 
@@ -24,7 +26,70 @@ class State(Enum):
     y1 = '↻'  # (1, i)
 
 
+STATES = (State.z0, State.z1, State.x0, State.x1, State.y0, State.y1)
 SIMPLE_STATES = (State.z0, State.z1, State.x0, State.x1)
+
+STATE_TO_VECTOR_LOOKUP = {
+    # State.z0: np.array([1, 0], dtype=np.complex128),
+    # State.z1: np.array([0, 1], dtype=np.complex128),
+    # State.x0: np.array([1 / sqrt(2), 1 / sqrt(2)], dtype=np.complex128),
+    # State.x1: np.array([1 / sqrt(2), -1 / sqrt(2)], dtype=np.complex128),
+    # State.y0: np.array([1 / sqrt(2), -1j / sqrt(2)], dtype=np.complex128),
+    # State.y1: np.array([1 / sqrt(2), 1j / sqrt(2)], dtype=np.complex128),
+    State.z0: [1, 0],
+    State.z1: [0, 1],
+    State.x0: [1 / sqrt(2), 1 / sqrt(2)],
+    State.x1: [1 / sqrt(2), -1 / sqrt(2)],
+    State.y0: [1 / sqrt(2), -1j / sqrt(2)],
+    State.y1: [1 / sqrt(2), 1j / sqrt(2)],
+}
+
+
+def states_to_vector(*states: State) -> List[complex]:
+    """
+    Return the final state of the outer product of the various states
+
+
+    >>> print_vector(states_to_vector(State.x1), transpose=True)
+    [  1/√2  -1/√2  ]
+    >>> print_vector(states_to_vector(State.y0), transpose=True)
+    [  1/√2  -1/√2j  ]
+    >>> print_vector(states_to_vector(State.z0, State.z1), transpose=True)
+    [  0  1  0  0  ]
+    >>> print_vector(states_to_vector(State.z0, State.z1, State.x0), transpose=True)
+    [  0  0  1/√2  1/√2  0  0  0  0  ]
+    >>> print_vector(states_to_vector(State.z0, State.x0, State.y1), transpose=True)
+    [  1/2  1/2j  1/2  1/2j  0  0  0  0  ]
+    """
+
+    vectors = [STATE_TO_VECTOR_LOOKUP[state] for state in states]
+    return [math.prod(combination) for combination in itertools.product(*vectors)]
+
+
+def vector_to_states(vector: Sequence[complex]) -> Optional[str]:
+    """
+    Write the given final state into a product of single states
+
+    If this is not possible with only simple states, return None
+
+    >>> vector_to_states([1/sqrt(2), -1/sqrt(2)])
+    '| - >'
+    >>> vector_to_states([1/sqrt(2), -1j/sqrt(2)])
+    '| ↺ >'
+    >>> vector_to_states([0, 1, 0, 0])
+    '| 0 1 >'
+    >>> vector_to_states([0, 0, 1/sqrt(2), 1/sqrt(2), 0, 0, 0, 0])
+    '| 0 1 + >'
+    """
+
+    if not isinstance(vector, list):
+        # The input vector can e.g. be a qiskit Statevector
+        vector = list(vector)
+    nr_qubits = int(math.log2(len(vector)))
+    for states in itertools.product(STATES, repeat=nr_qubits):
+        if vector == states_to_vector(*states):
+            return '| ' + ' '.join([state.value for state in states]) + ' >'
+    return None
 
 
 def normalize(state: List[float]) -> List[float]:
@@ -140,6 +205,28 @@ def display_float(number: float) -> str:
     return result.rjust(6)
 
 
+def print_vector(vector: List[complex], transpose=False):
+    """
+    Helper function to print a vector
+    """
+
+    elems = [display_complex(elem) for elem in vector]
+    if transpose:
+        elems = ['['] + [elem.strip() for elem in elems] + [']']
+        print('  '.join(elems))
+    else:
+        print('\n'.join(elems))
+
+
+def print_matrix(matrix: Sequence[List[complex]]):
+    """
+    Helper function to print a matrix
+    """
+
+    for row in matrix:
+        print('  '.join([display_complex(elem) for elem in row]))
+
+
 def display_complex(c: complex) -> str:
     """
     Helper function to round a complex number
@@ -171,9 +258,9 @@ def display_complex(c: complex) -> str:
 
 
 def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
-                         draw_unitary=True, draw_final_state=True,
+                         draw_unitary=False, draw_final_state=True,
                          draw_bloch_sphere=False, draw_q_sphere=False,
-                         draw_histogram=False):
+                         draw_histogram=False, use_row_vector=False):
     if draw_circuit:
         # Visualize the quantum circuit
         print('Quantum circuit:')
@@ -182,11 +269,9 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
     if draw_unitary:
         try:
             # Visualize the unitary operator
-            backend = Aer.get_backend('unitary_simulator')
-            unitary = execute(qc, backend).result().get_unitary()
+            unitary = get_unitary(qc)
             print('Unitary:')
-            for row in unitary:
-                print('  '.join([display_complex(elem) for elem in row]))
+            print_matrix(unitary)
         except QiskitError:
             # If a qunatum circuit contains a measure operation, the process is
             # not reversible anymore, and hence cannot be represented by a
@@ -196,13 +281,14 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
     if draw_final_state or draw_bloch_sphere or draw_q_sphere:
         # Visualize the final state
         # final_state for 2 qubits = a |00> + b |01> + c |10> + d |11>
-        backend = Aer.get_backend('statevector_simulator')
-        final_state = execute(qc, backend).result().get_statevector()
+        final_state = get_final_state(qc)
 
         if draw_final_state:
             print('Final state:')
-            for elem in final_state:
-                print(display_complex(elem))
+            if final_state_as_simple_states := vector_to_states(final_state):
+                print(final_state_as_simple_states)
+            else:
+                print_vector(final_state, transpose=use_row_vector)
         if draw_bloch_sphere:
             plot_bloch_multivector(final_state).show()
         if draw_q_sphere:
@@ -212,3 +298,19 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
         backend = Aer.get_backend('statevector_simulator')
         results = execute(qc, backend).result().get_counts()
         plot_histogram(results).show()
+
+
+def get_final_state(qc: QuantumCircuit) -> Statevector:
+    backend = Aer.get_backend('statevector_simulator')
+    final_state = execute(qc, backend).result().get_statevector()
+    return final_state
+
+
+def get_unitary(qc: QuantumCircuit) -> Operator:
+    """
+    Get the unitary representing the given quantum circuit
+    """
+
+    backend = Aer.get_backend('unitary_simulator')
+    unitary = execute(qc, backend).result().get_unitary()
+    return unitary

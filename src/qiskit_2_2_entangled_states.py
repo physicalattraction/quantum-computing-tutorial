@@ -62,5 +62,5 @@ if __name__ == '__main__':
     # single_qubit_gates_on_multi_qubit_vectors()
     # xh()
     # first_cnot()
-    exercise_2_1()
-    # exercise_3_4()
+    # exercise_2_1()
+    exercise_3_4()

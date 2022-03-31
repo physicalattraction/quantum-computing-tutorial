@@ -64,26 +64,38 @@ def t_gate():
 
 
 def quick_exercise_1():
+    print('Quick exercise 1')
     qc = QuantumCircuit(2)
     qc.h(0)
+    print('Before')
+    draw_quantum_circuit(qc, draw_bloch_sphere=0, draw_unitary=0)
     qc.cp(pi / 4, 0, 1)
-    draw_quantum_circuit(qc, draw_bloch_sphere=1)
+    print('After')
+    draw_quantum_circuit(qc, draw_bloch_sphere=1, draw_unitary=0)
 
 
 def quick_exercise_2():
+    print('Quick exercise 2')
     qc = QuantumCircuit(2)
     qc.h(0)
     qc.x(1)
-    qc.cu1(-pi / 2, 0, 1)
-    draw_quantum_circuit(qc)
+    print('Before')
+    draw_quantum_circuit(qc, draw_bloch_sphere=0, draw_unitary=0)
+    qc.cp(-pi / 2, 0, 1)
+    print('After')
+    draw_quantum_circuit(qc, draw_bloch_sphere=0, draw_unitary=0)
 
 
 def quick_exercise_3():
+    print('Quick exercise 3')
     qc = QuantumCircuit(2)
     qc.x(0)
     qc.x(1)
-    qc.cu1(pi / 4, 0, 1)
-    draw_quantum_circuit(qc)
+    print('Before')
+    draw_quantum_circuit(qc, draw_bloch_sphere=0, draw_unitary=0)
+    qc.cp(pi / 4, 0, 1)
+    print('After')
+    draw_quantum_circuit(qc, draw_bloch_sphere=0, draw_unitary=0)
 
 
 if __name__ == '__main__':
@@ -91,6 +103,6 @@ if __name__ == '__main__':
     # superposition()
     # cnot_behavior()
     # t_gate()
-    # quick_exercise_1()
-    # quick_exercise_2()
+    quick_exercise_1()
+    quick_exercise_2()
     quick_exercise_3()

@@ -10,7 +10,7 @@ from qiskit.visualization import plot_bloch_multivector, plot_histogram
 
 # These are the states along the Z, X and Y axis
 # The direction is a human-readable indication where on the Block sphere they lie
-from utils import draw_quantum_circuit
+from utils import STATES, draw_quantum_circuit, states_to_vector
 
 a = 1 / sqrt(2)  # Normalization factor
 state_z0 = [1, 0]  # |0> = [1, 0] = up
@@ -42,11 +42,11 @@ def show_all_initial_states():
     Draw the Bloch spheres for all 6 initial states
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
-                          state_y1]:
+    for initial_state in STATES:
         qc = QuantumCircuit(1, 1)
-        qc.initialize(initial_state, 0)
-        show_qc(qc)
+        qc.initialize(states_to_vector(initial_state), 0)
+        draw_quantum_circuit(qc, draw_bloch_sphere=True)
+        print('\n**********\n')
 
 
 def x_gate():
@@ -54,13 +54,12 @@ def x_gate():
     Execute an X-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
-                          state_y1]:
+    for initial_state in STATES:
         qc = QuantumCircuit(1, 1)
-        qc.initialize(initial_state, 0)
-        show_qc(qc)
+        qc.initialize(states_to_vector(initial_state), 0)
         qc.x(0)
-        show_qc(qc)
+        draw_quantum_circuit(qc, draw_bloch_sphere=True)
+        print('\n**********\n')
 
 
 def y_gate():
@@ -68,10 +67,9 @@ def y_gate():
     Execute a Y-gate operator on all 6 initial states and draw the Block spheres
     """
 
-    for initial_state in [state_z0, state_z1, state_x0, state_x1, state_y0,
-                          state_y1]:
+    for initial_state in STATES:
         qc = QuantumCircuit(1, 1)
-        qc.initialize(initial_state, 0)
+        qc.initialize(states_to_vector(initial_state), 0)
         qc.y(0)
         show_qc(qc)
 
@@ -249,11 +247,11 @@ def t_gate():
 
 if __name__ == '__main__':
     # show_all_initial_states()
-    # x_gate()
+    x_gate()
     # y_gate()
     # z_gate()
     # h_gate()
-    hxh_gate()
+    # hxh_gate()
     # x_measurement()
     # rz_gate()
     # s_gate()
