@@ -4,7 +4,9 @@ https://qiskit.org/textbook/ch-algorithms/bernstein-vazirani.html
 
 import numpy as np
 from qiskit import IBMQ, QuantumCircuit, transpile
+from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.ibmq import least_busy
+from qiskit.providers.ibmq.api.rest.backend import Backend
 from qiskit.tools.monitor import job_monitor
 from qiskit.visualization import plot_histogram
 
@@ -141,12 +143,12 @@ def quantum_solution_real(s: str):
     IBMQ.load_account()
     provider = IBMQ.get_provider(hub='ibm-q')
 
-    def backend_is_suitable(x):
+    def backend_is_suitable(x: Backend):
         return n + 1 <= x.configuration().n_qubits <= n + 4 and \
                not x.configuration().simulator and \
                x.status().operational == True
 
-    backend = least_busy(provider.backends(filters=backend_is_suitable))
+    backend: Backend = least_busy(provider.backends(filters=backend_is_suitable))
     print(f'Least busy {backend=}')
 
     # Run our circuit on the least busy backend. Monitor the execution of the job in the queue
@@ -165,9 +167,22 @@ def quantum_solution_real(s: str):
     plot_histogram(answer).show()
 
 
+def check_backends():
+    IBMQ.save_account(token=get_secret('IBM_TOKEN'), overwrite=True)
+    IBMQ.load_account()
+    provider = IBMQ.get_provider(hub='ibm-q')
+    for backend in provider.backends():
+        config = backend.configuration()
+        if config.simulator:
+            continue
+        print(f'Name: {backend.name()}, description: {config.description}, '
+              f'nr qubits: {config.n_qubits}, basis gates: {config.basis_gates}')
+
+
 if __name__ == '__main__':
+    check_backends()
     s = get_secret_s(4)
     print(f'Secret to guess: {s}')
-    # classical_solution(s)
-    # quantum_solution_simulated(s)
+    classical_solution(s)
+    quantum_solution_simulated(s)
     quantum_solution_real(s)
