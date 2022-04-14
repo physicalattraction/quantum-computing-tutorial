@@ -10,16 +10,16 @@ with warnings.catch_warnings():
 
 from utils import draw_quantum_circuit, get_final_state, vector_to_states
 
+input_bit = QuantumRegister(1, 'input')
+output_bit = QuantumRegister(1, 'output')
+garbage_bit = QuantumRegister(1, 'garbage')
+final_output_bit = QuantumRegister(1, 'final-output')
+
 
 def take_out_garbage():
     def draw(_qc):
         draw_quantum_circuit(_qc, draw_histogram=False, draw_bloch_sphere=False,
                              draw_unitary=False, draw_final_state=True)
-
-    input_bit = QuantumRegister(1, 'input')
-    output_bit = QuantumRegister(1, 'output')
-    garbage_bit = QuantumRegister(1, 'garbage')
-    final_output_bit = QuantumRegister(1, 'final-output')
 
     # noinspection PyPep8Naming
     Uf = QuantumCircuit(input_bit, output_bit, garbage_bit, final_output_bit)
@@ -34,6 +34,8 @@ def take_out_garbage():
 
     qc = Uf.compose(Vf.inverse())
     # draw(qc)
+    # V†fUf|x,0,0⟩=V†f|x,f(x),0⟩=|x,0,g(x)⟩ --> The inverse of Vf does not bring us back to the initial state. Any
+    # subsequent steps in an algorithm will therefore not run as expected, since the state is not the one that we need.
 
     copy = QuantumCircuit(output_bit, final_output_bit)
     copy.cx(output_bit, final_output_bit)
@@ -45,11 +47,6 @@ def take_out_garbage():
 
 
 def quick_exercise_3_1():
-    input_bit = QuantumRegister(1, 'input')
-    output_bit = QuantumRegister(1, 'output')
-    garbage_bit = QuantumRegister(1, 'garbage')
-    final_output_bit = QuantumRegister(1, 'final-output')
-
     # noinspection PyPep8Naming
     Vf = QuantumCircuit(input_bit, output_bit, garbage_bit, final_output_bit)
     Vf.cx(input_bit[0], garbage_bit[0])
@@ -93,5 +90,5 @@ def assert_qc_is_in_final_state(qc: QuantumCircuit, expected_final_state: str):
 
 
 if __name__ == '__main__':
-    take_out_garbage()
-    # quick_exercise_3_1()
+    # take_out_garbage()
+    quick_exercise_3_1()

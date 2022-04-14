@@ -90,13 +90,13 @@ def deutsch_jozsa():
     for qubit in range(n):
         dj_circuit.h(qubit)
 
-    # Put qubit in state |->
+    # Put last qubit in state |->
     dj_circuit.x(n)
     dj_circuit.h(n)
 
     # Apply an oracle
-    # dj_circuit += balanced_oracle()
-    dj_circuit += constant_oracle()
+    # dj_circuit = dj_circuit.compose(balanced_oracle())
+    dj_circuit = dj_circuit.compose(constant_oracle())
 
     # Repeat H-gates
     for qubit in range(n):
@@ -217,7 +217,7 @@ def execute_dj():
 
 def solve_textbook_problems():
     n = 4
-    for i in (1, 2, 3, 4):
+    for i in (0, 1, 2, 3, 4):
         oracle = problems.dj_problem_oracle(i)
         dj_circuit = dj_algorithm(oracle, n)
         backend = Aer.get_backend('statevector_simulator')
@@ -240,5 +240,5 @@ if __name__ == '__main__':
     # constant_oracle(draw=True)
     # balanced_oracle(draw=True)
     # deutsch_jozsa()
-    execute_dj()
-    # solve_textbook_problems()
+    # execute_dj()
+    solve_textbook_problems()
