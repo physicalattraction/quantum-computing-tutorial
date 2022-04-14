@@ -297,6 +297,9 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
     if draw_histogram:
         backend = Aer.get_backend('statevector_simulator')
         results = execute(qc, backend).result().get_counts()
+        print('Histogram: ')
+        for key, value in results.items():
+            print(f'{key}: {value}')
         plot_histogram(results).show()
 
 
