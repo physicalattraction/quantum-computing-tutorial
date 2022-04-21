@@ -8,7 +8,7 @@ from typing import List, Optional, Sequence
 import itertools
 import math
 from math import pi, sqrt
-from qiskit import Aer, QiskitError, QuantumCircuit, execute
+from qiskit import Aer, QiskitError, QuantumCircuit, execute, assemble
 from qiskit.providers.aer.backends.compatibility import Operator, Statevector
 from qiskit.visualization import plot_bloch_multivector, plot_histogram, plot_state_qsphere
 
@@ -260,7 +260,8 @@ def display_complex(c: complex) -> str:
 def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
                          draw_unitary=False, draw_final_state=True,
                          draw_bloch_sphere=False, draw_q_sphere=False,
-                         draw_histogram=False, use_row_vector=False):
+                         draw_histogram=False, draw_simulate=False,
+                         use_row_vector=False):
     if draw_circuit:
         # Visualize the quantum circuit
         print('Quantum circuit:')
@@ -302,6 +303,17 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
             print(f'{key}: {value}')
         plot_histogram(results).show()
 
+    if draw_simulate:
+        aer_sim = Aer.get_backend('aer_simulator')
+        shots = 1024
+        qobj = assemble(qc, shots=shots)
+        results = aer_sim.run(qobj).result()
+        counts = results.get_counts()
+        plot_histogram(counts).show()
+        for key, value in counts.items():
+            print(f'{key}: {value}')
+        return counts
+
 
 def get_final_state(qc: QuantumCircuit) -> Statevector:
     backend = Aer.get_backend('statevector_simulator')
@@ -317,3 +329,26 @@ def get_unitary(qc: QuantumCircuit) -> Operator:
     backend = Aer.get_backend('unitary_simulator')
     unitary = execute(qc, backend).result().get_unitary()
     return unitary
+
+
+def count_calls(func):
+    """
+    Add a variable `count` to a function that keeps track of how often it is called
+
+    Usage:
+    @count_calls
+    def f(x, y):
+        return x*y
+
+    for a in range(3):
+        for b in range(4):
+            f(a, b)
+    assert f.count == 12
+    """
+
+    def call_counter(*args, **kwargs):
+        call_counter.count += 1
+        return func(*args, **kwargs)
+
+    call_counter.count = 0
+    return call_counter

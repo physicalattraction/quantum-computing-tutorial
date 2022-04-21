@@ -11,32 +11,9 @@ from qiskit.tools.monitor import job_monitor
 from qiskit.visualization import plot_histogram
 
 from settings.local import get_secret
-from utils import draw_quantum_circuit
+from utils import draw_quantum_circuit, count_calls
 
 BitString = str
-
-
-def count_calls(func):
-    """
-    Add a variable `count` to a function that keeps track of how often it is called
-
-    Usage:
-    @count_calls
-    def f(x, y):
-        return x*y
-
-    for a in range(3):
-        for b in range(4):
-            f(a, b)
-    assert f.count == 12
-    """
-
-    def call_counter(*args, **kwargs):
-        call_counter.count += 1
-        return func(*args, **kwargs)
-
-    call_counter.count = 0
-    return call_counter
 
 
 def get_secret_s(n: int) -> BitString:
@@ -185,4 +162,4 @@ if __name__ == '__main__':
     print(f'Secret to guess: {s}')
     classical_solution(s)
     quantum_solution_simulated(s)
-    quantum_solution_real(s)
+    # quantum_solution_real(s)
