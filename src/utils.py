@@ -1,16 +1,22 @@
-"""
-https://qiskit.org/textbook/ch-gates/phase-kickback.html
-"""
 from enum import Enum
 from fractions import Fraction
-from typing import List, Optional, Sequence
+from typing import List, Union
+from typing import Optional, Sequence
 
 import itertools
 import math
 from math import pi, sqrt
-from qiskit import Aer, QiskitError, QuantumCircuit, execute, assemble
+from qiskit import IBMQ, QuantumCircuit, transpile, assemble, Aer
+from qiskit import QiskitError, execute
 from qiskit.providers.aer.backends.compatibility import Operator, Statevector
-from qiskit.visualization import plot_bloch_multivector, plot_histogram, plot_state_qsphere
+from qiskit.providers.backend import BackendV1 as Backend
+from qiskit.providers.ibmq import least_busy
+from qiskit.providers.ibmq.api.rest.backend import Backend
+from qiskit.tools.monitor import job_monitor
+from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere
+from qiskit.visualization import plot_histogram
+
+from settings.local import get_secret
 
 
 class State(Enum):
@@ -205,7 +211,7 @@ def display_float(number: float) -> str:
     return result.rjust(6)
 
 
-def print_vector(vector: List[complex], transpose=False):
+def print_vector(vector: Union[Statevector, List[complex]], transpose=False):
     """
     Helper function to print a vector
     """
@@ -258,7 +264,7 @@ def display_complex(c: complex) -> str:
 
 
 def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
-                         draw_unitary=False, draw_final_state=True,
+                         draw_unitary=False, draw_final_state=False,
                          draw_bloch_sphere=False, draw_q_sphere=False,
                          draw_histogram=False, draw_simulate=False,
                          use_row_vector=False):
@@ -352,3 +358,45 @@ def count_calls(func):
 
     call_counter.count = 0
     return call_counter
+
+
+def print_histogram_from_real(qc: QuantumCircuit, nr_shots: int = 1024):
+    n = qc.num_qubits
+    if n > 5:
+        print('There are no free quantum computers available with more than 5 qubits')
+        return
+
+    # Load our saved IBMQ accounts and get the least busy backend device with less than or equal to 5 qubits
+    IBMQ.save_account(token=get_secret('IBM_TOKEN'), overwrite=True)
+    IBMQ.load_account()
+    provider = IBMQ.get_provider(hub='ibm-q')
+
+    def backend_is_suitable(x: Backend):
+        return n <= x.configuration().n_qubits and \
+               not x.configuration().simulator and \
+               x.status().operational
+
+    print(f'Fetching list of suitable backends with at least {n} qubits...')
+    backend: Backend = least_busy(provider.backends(filters=backend_is_suitable))
+    print(f'Least busy {backend=}')
+
+    # Run our circuit on the least busy backend. Monitor the execution of the job in the queue
+    transpiled_bv_circuit = transpile(qc, backend, optimization_level=3)
+    job = backend.run(transpiled_bv_circuit, shots=nr_shots)
+    job_monitor(job, interval=2)
+
+    # Get the results from the computation
+    results = job.result()
+    answer = results.get_counts()
+
+    print('Histogram: ')
+    for key, value in answer.items():
+        print(f'{key}: {value}')
+    plot_histogram(answer).show()
+
+
+def compare_vectors(x: Statevector, y: Statevector):
+    if x != y:
+        print_vector(x, transpose=True)
+        print('is not equal to')
+        print_vector(y, transpose=True)

@@ -3,20 +3,13 @@ https://qiskit.org/textbook/ch-algorithms/simon.html
 """
 
 import random
-from typing import List
 
 import numpy as np
-from qiskit import IBMQ, QuantumCircuit, transpile, assemble, Aer
-from qiskit.providers.backend import BackendV1 as Backend
-from qiskit.providers.ibmq import least_busy
-from qiskit.providers.ibmq.api.rest.backend import Backend
-from qiskit.tools.monitor import job_monitor
-from qiskit.visualization import plot_histogram
+from itertools import product
+from qiskit import QuantumCircuit
 from qiskit_textbook.tools import simon_oracle
 
-from settings.local import get_secret
-from utils import draw_quantum_circuit
-from itertools import product
+from utils import draw_quantum_circuit, print_histogram_from_real
 
 BitString = str
 
@@ -173,43 +166,14 @@ def quantum_solution_simulated(b: str):
 
 
 def quantum_solution_real(b: str):
-    n = len(b)
     qc = get_simon_circuit(b)
-
-    # Load our saved IBMQ accounts and get the least busy backend device with less than or equal to 5 qubits
-    IBMQ.save_account(token=get_secret('IBM_TOKEN'), overwrite=True)
-    IBMQ.load_account()
-    provider = IBMQ.get_provider(hub='ibm-q')
-
-    def backend_is_suitable(x: Backend):
-        return 2 * n <= x.configuration().n_qubits <= 2 * n + 4 and \
-               not x.configuration().simulator and \
-               x.status().operational == True
-
-    print('Fetching list of suitable backends...')
-    backend: Backend = least_busy(provider.backends(filters=backend_is_suitable))
-    print(f'Least busy {backend=}')
-
-    # Run our circuit on the least busy backend. Monitor the execution of the job in the queue
-    shots = 1024
-    transpiled_bv_circuit = transpile(qc, backend, optimization_level=3)
-    job = backend.run(transpiled_bv_circuit, shots=shots)
-    job_monitor(job, interval=2)
-
-    # Get the results from the computation
-    results = job.result()
-    answer = results.get_counts()
-
-    print('Histogram: ')
-    for key, value in answer.items():
-        print(f'{key}: {value}')
-    plot_histogram(answer).show()
+    print_histogram_from_real(qc)
 
 
 if __name__ == '__main__':
     # b = get_secret_b(12)
     # classical_solution(b)
     # analyze_classical()
-    b = get_secret_b(2)
-    quantum_solution_simulated(b)
-    quantum_solution_real(b)
+    secret_b = get_secret_b(2)
+    quantum_solution_simulated(secret_b)
+    quantum_solution_real(secret_b)
