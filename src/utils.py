@@ -315,9 +315,9 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
         qobj = assemble(qc, shots=shots)
         results = aer_sim.run(qobj).result()
         counts = results.get_counts()
-        plot_histogram(counts).show()
-        for key, value in counts.items():
-            print(f'{key}: {value}')
+        # plot_histogram(counts).show()
+        # for key, value in counts.items():
+        #     print(f'{key}: {value}')
         return counts
 
 

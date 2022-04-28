@@ -62,7 +62,7 @@ def cnot():
             bit_to(qc, 0, state_0)
             bit_to(qc, 1, state_1)
             qc.cnot(0, 1)
-            draw_quantum_circuit(qc, draw_circuit=False, draw_unitary=False, draw_bloch_sphere=False)
+            draw_quantum_circuit(qc, draw_circuit=False, draw_final_state=True)
             print('----')
 
 

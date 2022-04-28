@@ -21,44 +21,59 @@ def _qft_rotations(circuit, n=None) -> QuantumCircuit:
     circuit.h(n)
     for qubit in range(n):
         circuit.cp(pi / 2 ** (n - qubit), qubit, n)
-    # At the end of our function, we call the same function again on
-    # the next qubits (we reduced n by one earlier in the function)
     _qft_rotations(circuit, n)
 
 
-def _invqft_rotations(circuit, n=None) -> QuantumCircuit:
+def _invqft_rotations(circuit, nr_qubits: int = None, n=None) -> QuantumCircuit:
     """
     Performs inverse qft on the first n qubits in circuit (without swaps)
     """
 
+    if nr_qubits is None:
+        nr_qubits = circuit.num_qubits
     if n is None:
         n = 0
-    if n == circuit.num_qubits:
+    if n == nr_qubits:
         return circuit
     for qubit in reversed(range(n)):
         circuit.cp(-pi / 2 ** (n - qubit), n, qubit)
     circuit.h(n)
-    # At the end of our function, we call the same function again on
-    # the next qubits (we reduced n by one earlier in the function)
-    _invqft_rotations(circuit, n + 1)
+    _invqft_rotations(circuit, nr_qubits, n + 1)
 
 
-def _swap_registers(circuit: QuantumCircuit) -> QuantumCircuit:
-    n = circuit.num_qubits
+def _swap_registers(circuit: QuantumCircuit, n: int = None) -> QuantumCircuit:
+    if n is None:
+        n = circuit.num_qubits
     for qubit in range(n // 2):
         circuit.swap(qubit, n - qubit - 1)
     return circuit
 
 
-def qft(circuit: QuantumCircuit) -> QuantumCircuit:
-    _qft_rotations(circuit)
-    _swap_registers(circuit)
+def qft(circuit: QuantumCircuit, n: int = None) -> QuantumCircuit:
+    """
+    Add an inverse QFT circuit to the existing circuit
+
+    :param circuit: Circuit to add the QFT to
+    :param n: Apply to the first n bits. If not given, use all qubits in the circuit
+    :return: Resulting circuit (although it is also edited in place, it is returned to enable chaining)
+    """
+
+    _qft_rotations(circuit, n)
+    _swap_registers(circuit, n)
     return circuit
 
 
-def invqft(circuit: QuantumCircuit) -> QuantumCircuit:
-    _swap_registers(circuit)
-    _invqft_rotations(circuit)
+def invqft(circuit: QuantumCircuit, n: int = None) -> QuantumCircuit:
+    """
+    Add an inverse QFT circuit to the existing circuit
+
+    :param circuit: Circuit to add the Inv QFT to
+    :param n: Apply to the first n bits. If not given, use all qubits in the circuit
+    :return: Resulting circuit (although it is also edited in place, it is returned to enable chaining)
+    """
+
+    _swap_registers(circuit, n)
+    _invqft_rotations(circuit, n)
     return circuit
 
 

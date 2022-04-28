@@ -36,10 +36,20 @@ def first_cnot():
     qc = QuantumCircuit(2)
 
     # Apply H-gate to the first:
-    qc.h(0)
-    # qc.x(1)
+    # qc.h(0)
+    # qc.x(0)
+    qc.x(1)
+    draw_quantum_circuit(qc, draw_circuit=False, draw_final_state=True)
     qc.cx(0, 1)
-    draw_quantum_circuit(qc, draw_histogram=True)
+    draw_quantum_circuit(qc, draw_final_state=True, draw_unitary=True)
+
+
+def first_cs():
+    qc = QuantumCircuit(2)
+    qc.x(1)
+    draw_quantum_circuit(qc, draw_circuit=False, draw_final_state=True)
+    qc.csx(0, 1)
+    draw_quantum_circuit(qc, draw_final_state=True)
 
 
 def exercise_2_1():
@@ -62,5 +72,6 @@ if __name__ == '__main__':
     # single_qubit_gates_on_multi_qubit_vectors()
     # xh()
     # first_cnot()
+    first_cs()
     # exercise_2_1()
-    exercise_3_4()
+    # exercise_3_4()
