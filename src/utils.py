@@ -1,3 +1,5 @@
+import os.path
+import pickle
 from enum import Enum
 from fractions import Fraction
 from typing import List, Union
@@ -11,7 +13,6 @@ from qiskit import QiskitError, execute
 from qiskit.providers.aer.backends.compatibility import Operator, Statevector
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.ibmq import least_busy
-from qiskit.providers.ibmq.api.rest.backend import Backend
 from qiskit.tools.monitor import job_monitor
 from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere
 from qiskit.visualization import plot_histogram
@@ -49,6 +50,9 @@ STATE_TO_VECTOR_LOOKUP = {
     State.y0: [1 / sqrt(2), -1j / sqrt(2)],
     State.y1: [1 / sqrt(2), 1j / sqrt(2)],
 }
+SRC_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.dirname(SRC_DIR)
+CIRCUIT_DIR = os.path.join(ROOT_DIR, 'circuits')
 
 
 def states_to_vector(*states: State) -> List[complex]:
@@ -268,6 +272,10 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
                          draw_bloch_sphere=False, draw_q_sphere=False,
                          draw_histogram=False, draw_simulate=False,
                          use_row_vector=False):
+    if draw_simulate:
+        aer_sim = Aer.get_backend('aer_simulator')
+        qc = load_transpiled_quantum_circuit(qc, aer_sim)
+
     if draw_circuit:
         # Visualize the quantum circuit
         print('Quantum circuit:')
@@ -310,12 +318,11 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
         plot_histogram(results).show()
 
     if draw_simulate:
-        aer_sim = Aer.get_backend('aer_simulator')
         shots = 1024
         qobj = assemble(qc, shots=shots)
         results = aer_sim.run(qobj).result()
         counts = results.get_counts()
-        # plot_histogram(counts).show()
+        plot_histogram(counts).show()
         # for key, value in counts.items():
         #     print(f'{key}: {value}')
         return counts
@@ -362,9 +369,10 @@ def count_calls(func):
 
 def print_histogram_from_real(qc: QuantumCircuit, nr_shots: int = 1024):
     n = qc.num_qubits
-    if n > 5:
-        print('There are no free quantum computers available with more than 5 qubits')
-        return
+    # if n > 5:
+    #     print(f'There are no free quantum computers available with more than 5 qubits, '
+    #           f'you requested one with {n} qubits.')
+    #     return
 
     # Load our saved IBMQ accounts and get the least busy backend device with less than or equal to 5 qubits
     IBMQ.save_account(token=get_secret('IBM_TOKEN'), overwrite=True)
@@ -373,15 +381,16 @@ def print_histogram_from_real(qc: QuantumCircuit, nr_shots: int = 1024):
 
     def backend_is_suitable(x: Backend):
         return n <= x.configuration().n_qubits and \
-               not x.configuration().simulator and \
                x.status().operational
+               # not x.configuration().simulator and \
 
     print(f'Fetching list of suitable backends with at least {n} qubits...')
     backend: Backend = least_busy(provider.backends(filters=backend_is_suitable))
     print(f'Least busy {backend=}')
 
+    transpiled_bv_circuit = load_transpiled_quantum_circuit(qc, backend, optimization_level=3)
+
     # Run our circuit on the least busy backend. Monitor the execution of the job in the queue
-    transpiled_bv_circuit = transpile(qc, backend, optimization_level=3)
     job = backend.run(transpiled_bv_circuit, shots=nr_shots)
     job_monitor(job, interval=2)
 
@@ -393,6 +402,7 @@ def print_histogram_from_real(qc: QuantumCircuit, nr_shots: int = 1024):
     for key, value in answer.items():
         print(f'{key}: {value}')
     plot_histogram(answer).show()
+    return answer
 
 
 def compare_vectors(x: Statevector, y: Statevector):
@@ -400,3 +410,65 @@ def compare_vectors(x: Statevector, y: Statevector):
         print_vector(x, transpose=True)
         print('is not equal to')
         print_vector(y, transpose=True)
+
+
+def save_quantum_circuit(qc: QuantumCircuit, filename: str):
+    """
+    Pickle the quantum circuit for later use
+
+    Useful for when you have performed a costly optimized transpilation
+    """
+
+    if not filename.endswith('.circuit'):
+        filename += '.circuit'
+    with open(os.path.join(CIRCUIT_DIR, filename), 'wb') as f:
+        pickle.dump(qc, f)
+
+
+def load_transpiled_quantum_circuit(qc: QuantumCircuit, backend: Backend, optimization_level: int = 1) -> QuantumCircuit:
+    """
+    Return the transpiled quantum circuit for the given quantum circuit.
+
+    We first check if the given quantum circuit has been transpiled already
+    If so, we load and unpickle it. If not, we transpile it now
+
+    This lookip is based on the name of the Quantum circuit. If you don't name your circuit
+    explicitly, the circuit gets a name like circuit-2. Since this could contain anything,
+    we do not load transpiled circuits for those Quantum circuits.
+
+    :param qc: any QuantumCircuit
+    :param backend: Backend to transpile the circuit on
+    :return: transpiled QuantumCircuit
+    """
+
+    filename = f'{backend.name()}||{qc.name}.circuit'
+
+    if not qc.name.startswith('circuit'):
+        if circuit := load_quantum_circuit(filename):
+            print(f'Reuse transpiled circuit {filename}')
+            return circuit
+
+    print(f'Transpiling circuit {filename}')
+    qc = transpile(qc, backend, optimization_level=optimization_level)
+    save_quantum_circuit(qc, filename)
+    return qc
+
+
+def load_quantum_circuit(filename: str) -> Optional[QuantumCircuit]:
+    """
+    Unpickle the quantum circuit saved earlier
+
+    If the file does not exist, return None
+
+    Useful for when you have performed a costly optimized transpilation
+    """
+
+    if not filename.endswith('.circuit'):
+        filename += '.circuit'
+    filepath = os.path.join(CIRCUIT_DIR, filename)
+
+    if not os.path.isfile(filepath):
+        return None
+
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)
