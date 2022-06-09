@@ -271,14 +271,14 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
                          draw_unitary=False, draw_final_state=False,
                          draw_bloch_sphere=False, draw_q_sphere=False,
                          draw_histogram=False, draw_simulate=False,
-                         use_row_vector=False):
+                         nr_shots=1024, use_row_vector=False):
     if draw_simulate:
         aer_sim = Aer.get_backend('aer_simulator')
         qc = load_transpiled_quantum_circuit(qc, aer_sim)
 
     if draw_circuit:
         # Visualize the quantum circuit
-        print('Quantum circuit:')
+        print(f'\n\nQuantum circuit "{qc.name}":')
         print(qc.draw())
 
     if draw_unitary:
@@ -318,13 +318,13 @@ def draw_quantum_circuit(qc: QuantumCircuit, draw_circuit=True,
         plot_histogram(results).show()
 
     if draw_simulate:
-        shots = 1024
+        shots = nr_shots
         qobj = assemble(qc, shots=shots)
         results = aer_sim.run(qobj).result()
         counts = results.get_counts()
         plot_histogram(counts).show()
-        # for key, value in counts.items():
-        #     print(f'{key}: {value}')
+        for key, value in counts.items():
+            print(f'{key}: {value}')
         return counts
 
 
@@ -381,8 +381,8 @@ def print_histogram_from_real(qc: QuantumCircuit, nr_shots: int = 1024):
 
     def backend_is_suitable(x: Backend):
         return n <= x.configuration().n_qubits and \
+               not x.configuration().simulator and \
                x.status().operational
-               # not x.configuration().simulator and \
 
     print(f'Fetching list of suitable backends with at least {n} qubits...')
     backend: Backend = least_busy(provider.backends(filters=backend_is_suitable))
